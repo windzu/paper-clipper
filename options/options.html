@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Paper Clipper Options</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="options">
+      <header>
+        <p class="eyebrow">Paper Clipper</p>
+        <h1>Options</h1>
+      </header>
+
+      <form id="optionsForm">
+        <label>
+          <span>Vault name</span>
+          <input id="vaultName" name="vaultName" type="text" autocomplete="off" required>
+        </label>
+
+        <label>
+          <span>Target folder</span>
+          <input id="targetFolder" name="targetFolder" type="text" autocomplete="off" required>
+        </label>
+
+        <label>
+          <span>Default status</span>
+          <input id="defaultStatus" name="defaultStatus" type="text" autocomplete="off" required>
+        </label>
+
+        <div class="actions">
+          <button type="submit">Save</button>
+          <span id="saveStatus" role="status"></span>
+        </div>
+      </form>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>

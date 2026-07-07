@@ -29,6 +29,20 @@ Paper Clipper is a browser extension for turning paper pages into Obsidian notes
 - No PDF download unless URI-only paper links are insufficient for the workflow.
 - No figure extraction.
 
-## Status
+## Current Implementation
 
-Planning and scaffold stage.
+- Chrome Manifest V3 extension scaffold.
+- arXiv abstract-page parser.
+- Popup preview and clip action.
+- Obsidian options for vault, target folder, and default status.
+- Markdown generation with Obsidian Properties.
+- `html_url` priority: official arXiv HTML, then ar5iv.
+- Stable note path: `{targetFolder}/{arxiv_id}.md`.
+
+## Manual Check
+
+1. Open `chrome://extensions`.
+2. Enable developer mode.
+3. Load this folder as an unpacked extension.
+4. Open the extension options and set the Obsidian vault name.
+5. Open an arXiv abstract page and click Paper Clipper.

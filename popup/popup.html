@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Paper Clipper</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <header class="header">
+        <div>
+          <p class="eyebrow">Paper Clipper</p>
+          <h1 id="title">Checking page</h1>
+        </div>
+        <button id="optionsButton" class="icon-button" title="Options" aria-label="Options">⚙</button>
+      </header>
+
+      <section id="status" class="status">Loading current tab...</section>
+
+      <section id="preview" class="preview hidden">
+        <dl>
+          <div>
+            <dt>arXiv</dt>
+            <dd id="arxivId"></dd>
+          </div>
+          <div>
+            <dt>Authors</dt>
+            <dd id="authors"></dd>
+          </div>
+          <div>
+            <dt>HTML</dt>
+            <dd id="htmlSource"></dd>
+          </div>
+        </dl>
+      </section>
+
+      <footer class="actions">
+        <button id="clipButton" class="primary" disabled>Clip to Obsidian</button>
+      </footer>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -39,6 +39,11 @@ Minimum settings:
 - `targetFolder`: folder inside vault, for example `Papers/arXiv`.
 - `defaultStatus`: default reading state, for example `To Read`.
 
+MVP defaults:
+
+- `targetFolder`: `Papers/arXiv`
+- `defaultStatus`: `To Read`
+
 ## File Naming
 
 Use deterministic paths:
@@ -48,6 +53,7 @@ Use deterministic paths:
 - example: `Papers/arXiv/2505.12345.md`
 
 This avoids title sanitization issues and gives repeat saves the same target path.
+For old arXiv IDs containing `/`, replace `/` with `_` in the filename while keeping the original `arxiv_id` in frontmatter.
 
 ## Markdown Schema
 
@@ -60,6 +66,7 @@ Recommended frontmatter fields:
 - `arxiv_id`
 - `url`
 - `html_url`
+- `html_source`
 - `pdf_url`
 - `code_url`
 - `publish_date`
@@ -77,6 +84,8 @@ Recommended body sections:
 - Ideas
 
 The Links section should duplicate the most important URLs in normal Markdown body text so both Obsidian users and agents can see them without parsing YAML only.
+
+`authors` should be written as a YAML list, not a single comma-separated string.
 
 ## HTML And PDF Strategy
 
@@ -109,6 +118,8 @@ Fallback route:
 - Put full Markdown content into clipboard.
 - Use Obsidian URI to open/create the target file.
 - Keep implementation compatible with Obsidian Web Clipper style behavior.
+
+MVP implementation starts with the primary route only. Clipboard fallback should be added after manual testing proves that URI length or existing-file behavior is a real issue.
 
 ## MVP Acceptance
 
