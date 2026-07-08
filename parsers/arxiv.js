@@ -46,31 +46,42 @@
     return cleanText(abstractEl.textContent.replace(/^Abstract:\s*/i, ""));
   }
 
-  function buildPdfUrl(paperId) {
-    return paperId ? `https://arxiv.org/pdf/${paperId}.pdf` : "";
+  function uniqueUrls(urls) {
+    const seen = new Set();
+    return urls.filter((value) => {
+      const url = value && value.url;
+      if (!url || seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    });
   }
 
-  function extractHtmlUrl(paperId) {
-    const urls = {
-      url: "",
-      source: ""
-    };
+  function extractHtmlCandidates(paperId) {
+    if (!paperId) return [];
 
-    if (!paperId) return urls;
+    const candidates = [];
 
     const officialLink = Array.from(document.querySelectorAll("a[href]"))
       .map((link) => link.href)
       .find((href) => /^https:\/\/arxiv\.org\/html\//i.test(href));
 
     if (officialLink) {
-      urls.url = officialLink;
-      urls.source = "arxiv";
-      return urls;
+      candidates.push({
+        url: officialLink,
+        source: "arxiv"
+      });
     }
 
-    urls.url = `https://ar5iv.labs.arxiv.org/html/${paperId}`;
-    urls.source = "ar5iv";
-    return urls;
+    candidates.push({
+      url: `https://ar5iv.labs.arxiv.org/html/${paperId}`,
+      source: "ar5iv"
+    });
+
+    return uniqueUrls(candidates);
+  }
+
+  function buildPdfUrl(paperId) {
+    return paperId ? `https://arxiv.org/pdf/${paperId}.pdf` : "";
   }
 
   function monthToNumber(month) {
@@ -141,18 +152,18 @@
     const title = extractTitle();
     if (!title) return null;
 
-    const html = extractHtmlUrl(arxivId);
+    const htmlCandidates = extractHtmlCandidates(arxivId);
 
     return {
       title,
       shortTitle: extractShortTitle(title),
       authors: extractAuthors(),
       abstract: extractAbstract(),
-      source: "arxiv",
       arxivId,
-      url: window.location.href,
-      htmlUrl: html.url,
-      htmlSource: html.source,
+      url: `https://arxiv.org/abs/${arxivId}`,
+      htmlCandidates,
+      htmlUrl: htmlCandidates[0] ? htmlCandidates[0].url : "",
+      htmlSource: htmlCandidates[0] ? htmlCandidates[0].source : "",
       pdfUrl: buildPdfUrl(arxivId),
       codeUrl: extractCodeUrl(),
       publishDate: extractPublishDate()

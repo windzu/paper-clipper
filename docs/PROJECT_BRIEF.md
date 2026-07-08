@@ -24,13 +24,19 @@ Because of this, Paper Clipper should start as a clean project instead of deeply
 
 The note is a database row first and a reading workspace second.
 
-The Obsidian database view should expose the information needed to decide what to read and how to fetch it:
+The Obsidian database view should expose the information needed to decide what to read:
 
 - title
-- authors
+- short title
 - status
+- category
 - publish date
+- abstract
+
+The note frontmatter should keep links and metadata for tools:
+
 - arXiv ID
+- authors
 - HTML paper link
 - PDF paper link
 - source page link
@@ -46,19 +52,19 @@ or, if official arXiv HTML is unavailable:
 
 - `html_url: "https://ar5iv.labs.arxiv.org/html/2505.xxxxx"`
 
-This field should be visible as a database column in Obsidian Bases / Dataview and usable by agents as a direct reading target.
+This field should be available in note frontmatter and usable by Codex, Claude Code, or similar agents as a direct reading target. It does not need to be shown in the default Base view.
 
 ## Priorities
 
 1. Obsidian support.
 2. Browser extension workflow.
 3. Structured paper note generation.
-4. HTML link first.
-5. PDF URL fallback.
+4. Root-level Obsidian Base as the common paper entry.
+5. HTML link first for agent reading.
 6. Simple, deterministic file naming.
 
 ## Open Questions
 
-- Whether to use official arXiv HTML only when detected on the page, or always generate an ar5iv fallback.
-- Whether repeated saves should open the same target note without overwriting existing user notes.
-- Whether `obsidian://new` with `content` is stable enough, or whether clipboard fallback is required from the first version.
+- Repeated save is now blocked by arXiv ID to avoid duplicate imports.
+- HTML priority is official arXiv HTML -> ar5iv. Only reachable HTML URL is written.
+- `obsidian://new` remains the primary route. If URI length or overwrite behavior becomes an issue, evaluate clipboard fallback.

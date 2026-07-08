@@ -4,8 +4,11 @@
   const DEFAULT_CONFIG = {
     vaultName: "",
     targetFolder: "Papers/arXiv",
-    defaultStatus: "To Read"
+    defaultStatus: "To Read",
+    htmlProbeTimeoutMs: 2500
   };
+
+  const DEDUPE_INDEX_KEY = "__paper_clipper_imported_by_file__";
 
   function normalizeFolder(folder) {
     return (folder || "")
@@ -24,11 +27,19 @@
     })();
 
     return decoded
-      .replace(/[\\/:*?"<>|%#\+]/g, "_")
+      .replace(/[\\\/:*?\"<>|%#\+]/g, "_")
       .replace(/\s+/g, "_")
       .replace(/_{2,}/g, "_")
       .replace(/^_+|_+$/g, "")
       .slice(0, 120) || "paper";
+  }
+
+  function normalizeUrl(url) {
+    try {
+      return new URL(url || "").toString();
+    } catch (error) {
+      return "";
+    }
   }
 
   function buildFilePath(config, paper) {
@@ -39,7 +50,7 @@
 
   function yamlScalar(value) {
     const text = String(value || "");
-    return `"${text.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+    return `"${text.replace(/\\/g, "\\\\").replace(/\"/g, '\\\"')}"`;
   }
 
   function yamlList(values) {
@@ -55,28 +66,124 @@
     return lines.filter((item) => item !== "").join("\n");
   }
 
-  function buildMarkdown(config, paper, now = new Date()) {
-    const created = now.toISOString().slice(0, 10);
+  function yamlListField(name, values) {
+    if (!Array.isArray(values) || values.length === 0) return `${name}: []`;
+    return `${name}:\n${yamlList(values)}`;
+  }
+
+  async function probeReachableUrl(url, timeoutMs) {
+    const normalizedUrl = normalizeUrl(url);
+    if (!normalizedUrl) return false;
+
+    const timeout = timeoutMs || DEFAULT_CONFIG.htmlProbeTimeoutMs;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const headResult = await fetch(normalizedUrl, {
+        method: "HEAD",
+        redirect: "manual",
+        signal: controller.signal
+      });
+
+      if (headResult.status >= 200 && headResult.status < 400) {
+        return true;
+      }
+    } catch (error) {
+      // some servers reject HEAD, continue with GET fallback below
+    }
+
+    try {
+      const getResult = await fetch(normalizedUrl, {
+        method: "GET",
+        redirect: "manual",
+        signal: controller.signal
+      });
+
+      return getResult.status >= 200 && getResult.status < 400;
+    } catch (error) {
+      return false;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  async function pickBestHtmlUrl(candidates = [], timeoutMs) {
+    for (const item of candidates) {
+      if (!item || !item.url) continue;
+
+      const exists = await probeReachableUrl(item.url, timeoutMs);
+      if (exists) {
+        return {
+          url: normalizeUrl(item.url),
+          source: item.source || "",
+          verified: true
+        };
+      }
+    }
+
+    return {
+      url: "",
+      source: "",
+      verified: false
+    };
+  }
+
+  function enrichPaperUrls(paper) {
+    const candidates =
+      Array.isArray(paper.htmlCandidates) && paper.htmlCandidates.length > 0
+        ? paper.htmlCandidates
+        : [
+          {
+            url: paper.htmlUrl || "",
+            source: paper.htmlSource || "arxiv"
+          }
+        ];
+
+    return {
+      ...paper,
+      __htmlCandidates: candidates
+    };
+  }
+
+  async function resolveHtmlUrl(paper, config) {
+    const prepared = enrichPaperUrls(paper);
+    const resolved = await pickBestHtmlUrl(prepared.__htmlCandidates, config.htmlProbeTimeoutMs);
+
+    if (!resolved.verified) {
+      return {
+        ...prepared,
+        htmlUrl: "",
+        htmlSource: "",
+        htmlUrlVerified: false
+      };
+    }
+
+    return {
+      ...prepared,
+      htmlUrl: resolved.url,
+      htmlSource: resolved.source,
+      htmlUrlVerified: true
+    };
+  }
+
+  function buildMarkdown(config, paper) {
     const status = config.defaultStatus || DEFAULT_CONFIG.defaultStatus;
 
     return [
       "---",
       `title: ${yamlScalar(paper.title)}`,
       `short_title: ${yamlScalar(paper.shortTitle)}`,
-      Array.isArray(paper.authors) && paper.authors.length > 0
-        ? `authors:\n${yamlList(paper.authors)}`
-        : "authors: []",
-      `source: ${yamlScalar(paper.source || "arxiv")}`,
+      yamlListField("authors", paper.authors),
       `arxiv_id: ${yamlScalar(paper.arxivId)}`,
       `url: ${yamlScalar(paper.url)}`,
       `html_url: ${yamlScalar(paper.htmlUrl)}`,
-      `html_source: ${yamlScalar(paper.htmlSource)}`,
       `pdf_url: ${yamlScalar(paper.pdfUrl)}`,
       `code_url: ${yamlScalar(paper.codeUrl)}`,
       `publish_date: ${yamlScalar(paper.publishDate)}`,
       `status: ${yamlScalar(status)}`,
-      'type: "paper"',
-      `created: ${yamlScalar(created)}`,
+      yamlListField("category", paper.category),
+      `abstract: ${yamlScalar(paper.abstract)}`,
       "---",
       "",
       "# Links",
@@ -110,19 +217,86 @@
     return `obsidian://new?vault=${encodedVault}&file=${encodedFile}&content=${encodedContent}`;
   }
 
-  function buildClipTarget(config, paper) {
+  function buildObsidianOpenUri(config, filePath) {
+    const encodedVault = encodeURIComponent(config.vaultName || "");
+    const encodedFile = encodeURIComponent(filePath || "");
+    return `obsidian://open?vault=${encodedVault}&file=${encodedFile}`;
+  }
+
+  async function buildClipTarget(config, paper) {
     const mergedConfig = {
       ...DEFAULT_CONFIG,
       ...config
     };
+
     const filePath = buildFilePath(mergedConfig, paper);
-    const markdown = buildMarkdown(mergedConfig, paper);
+    const resolvedPaper = await resolveHtmlUrl(paper, mergedConfig);
+    const markdown = buildMarkdown(mergedConfig, resolvedPaper);
     const uri = buildObsidianNewUri(mergedConfig, filePath, markdown);
 
     return {
       filePath,
       markdown,
-      uri
+      uri,
+      resolvedPaper
+    };
+  }
+
+  async function getImportIndex() {
+    const store = await chrome.storage.sync.get(DEDUPE_INDEX_KEY);
+    return store[DEDUPE_INDEX_KEY] || {};
+  }
+
+  function getImportKey(config, paper) {
+    if (paper?.arxivId) return `arxiv:${paper.arxivId}`;
+    return `path:${buildFilePath(config, paper)}`;
+  }
+
+  async function checkImported(config, paper) {
+    const mergedConfig = {
+      ...DEFAULT_CONFIG,
+      ...config
+    };
+
+    const index = await getImportIndex();
+    const key = getImportKey(mergedConfig, paper);
+    const matched = index[key];
+
+    if (!matched) {
+      return {
+        exists: false
+      };
+    }
+
+    return {
+      exists: true,
+      record: matched
+    };
+  }
+
+  async function markImported(config, paper) {
+    const mergedConfig = {
+      ...DEFAULT_CONFIG,
+      ...config
+    };
+
+    const index = await getImportIndex();
+    const key = getImportKey(mergedConfig, paper);
+
+    index[key] = {
+      arxivId: paper.arxivId || "",
+      title: paper.title || "",
+      filePath: buildFilePath(mergedConfig, paper),
+      htmlUrl: paper.htmlUrl || "",
+      vaultName: mergedConfig.vaultName || "",
+      folder: normalizeFolder(mergedConfig.targetFolder),
+      updatedAt: new Date().toISOString()
+    };
+
+    await chrome.storage.sync.set({ [DEDUPE_INDEX_KEY]: index });
+
+    return {
+      exists: true
     };
   }
 
@@ -130,6 +304,12 @@
     DEFAULT_CONFIG,
     buildClipTarget,
     buildFilePath,
-    buildMarkdown
+    buildMarkdown,
+    buildObsidianNewUri,
+    pickBestHtmlUrl,
+    checkImported,
+    markImported,
+    getImportKey,
+    buildObsidianOpenUri
   };
 })();
