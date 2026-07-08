@@ -64,6 +64,12 @@ h1 {
   color: #8b2f27;
 }
 
+.status.warning {
+  border-color: #ebd9a8;
+  background: #fffbeb;
+  color: #8f5f23;
+}
+
 .status.success {
   border-color: #bad5c2;
   background: #f0faf2;
@@ -128,6 +134,26 @@ dd {
   cursor: not-allowed;
 }
 
+.secondary {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 34px;
+  border: 1px solid #a7b8b3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2b2f;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary:disabled {
+  background: #e6e8e7;
+  border-color: #c4cbca;
+  color: #99a2a4;
+  cursor: not-allowed;
+}
+
 @media (prefers-color-scheme: dark) {
   body {
     background: #171b1d;
@@ -144,6 +170,24 @@ dd {
     border-color: #394346;
     background: #20272a;
     color: #e7ecea;
+  }
+
+  .secondary {
+    border-color: #4a585f;
+    background: #1f2528;
+    color: #edf4f1;
+  }
+
+  .secondary:disabled {
+    background: #2c3538;
+    border-color: #3c4b4f;
+    color: #687174;
+  }
+
+  .status.warning {
+    border-color: #6f5f36;
+    background: #3d2f13;
+    color: #f7df91;
   }
 
   dl > div {

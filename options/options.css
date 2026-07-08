@@ -29,6 +29,19 @@ h1 {
   line-height: 1.2;
 }
 
+h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+p {
+  margin: 0 0 14px;
+  color: #5d6b70;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 form {
   display: grid;
   gap: 18px;
@@ -76,9 +89,34 @@ button {
   cursor: pointer;
 }
 
-#saveStatus {
+#saveStatus,
+#baseStatus {
   color: #3b7148;
   font-size: 14px;
+}
+
+.database {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid #dce1de;
+}
+
+.secondary {
+  background: #ffffff;
+  border: 1px solid #a7b8b3;
+  color: #1f2b2f;
+}
+
+button:disabled {
+  background: #a8b5b1;
+  color: #ffffff;
+  cursor: not-allowed;
+}
+
+.secondary:disabled {
+  background: #e6e8e7;
+  border-color: #c4cbca;
+  color: #99a2a4;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -98,7 +136,28 @@ button {
     color: #edf1ef;
   }
 
-  #saveStatus {
+  p {
+    color: #a8b6b8;
+  }
+
+  #saveStatus,
+  #baseStatus {
     color: #8bd29b;
+  }
+
+  .database {
+    border-top-color: #30393c;
+  }
+
+  .secondary {
+    background: #20272a;
+    border-color: #4a585f;
+    color: #edf1ef;
+  }
+
+  .secondary:disabled {
+    background: #2c3538;
+    border-color: #3c4b4f;
+    color: #687174;
   }
 }

@@ -1,0 +1,120 @@
+filters:
+  and:
+    - file.folder == "Papers/arXiv"
+properties:
+  note.short_title:
+    displayName: ShortTitle
+  note.title:
+    displayName: Title
+  note.status:
+    displayName: Status
+  note.category:
+    displayName: Category
+  note.publish_date:
+    displayName: PublishDate
+  note.abstract:
+    displayName: Abstract
+views:
+  - type: table
+    name: 全部
+    order:
+      - ShortTitle
+      - file.name
+      - Title
+      - Status
+      - Category
+      - PublishDate
+      - Abstract
+    sort:
+      - property: PublishDate
+        direction: DESC
+  - type: table
+    name: To Read
+    filters:
+      and:
+        - note.status == "To Read"
+    order:
+      - ShortTitle
+      - file.name
+      - Title
+      - Category
+      - PublishDate
+      - Abstract
+    sort:
+      - property: PublishDate
+        direction: DESC
+  - type: table
+    name: In progress
+    filters:
+      and:
+        - note.status == "In progress"
+    order:
+      - ShortTitle
+      - file.name
+      - Title
+      - Category
+      - PublishDate
+      - Abstract
+    sort:
+      - property: PublishDate
+        direction: DESC
+  - type: table
+    name: Done
+    filters:
+      and:
+        - note.status == "Done"
+    order:
+      - ShortTitle
+      - file.name
+      - Title
+      - Category
+      - PublishDate
+      - Abstract
+    sort:
+      - property: PublishDate
+        direction: DESC
+  - type: table
+    name: End2End
+    filters:
+      and:
+        - note.category.contains("End2End")
+    order:
+      - ShortTitle
+      - file.name
+      - Title
+      - Status
+      - PublishDate
+      - Abstract
+    sort:
+      - property: PublishDate
+        direction: DESC
+  - type: table
+    name: BEV
+    filters:
+      and:
+        - note.category.contains("BEV")
+    order:
+      - ShortTitle
+      - file.name
+      - Title
+      - Status
+      - PublishDate
+      - Abstract
+    sort:
+      - property: PublishDate
+        direction: DESC
+  - type: table
+    name: Occupancy
+    filters:
+      and:
+        - note.category.contains("Occupancy")
+    order:
+      - ShortTitle
+      - file.name
+      - Title
+      - Status
+      - PublishDate
+      - Abstract
+    sort:
+      - property: PublishDate
+        direction: DESC

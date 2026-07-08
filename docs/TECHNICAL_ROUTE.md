@@ -62,17 +62,15 @@ Recommended frontmatter fields:
 - `title`
 - `short_title`
 - `authors`
-- `source`
 - `arxiv_id`
 - `url`
 - `html_url`
-- `html_source`
 - `pdf_url`
 - `code_url`
 - `publish_date`
 - `status`
-- `type`
-- `created`
+- `category`
+- `abstract`
 
 Recommended body sections:
 
@@ -96,6 +94,59 @@ Priority:
 1. Official arXiv HTML URL if available.
 2. ar5iv fallback URL.
 3. PDF URL.
+
+### Duplicate Import Rule
+
+- 去重主键为 `arxiv_id`。
+- 同一论文若已导入，后台返回 `DUPLICATE` 并附带现存记录，不再重复触发 `obsidian://new`。
+- 目的是避免重复文件与重复行，保持数据库条目唯一性。
+- 弹窗层提供「Open imported note」动作，可直接打开历史文件。
+
+### html_url Rule
+
+- 解析器只负责给出候选列表（官方 arXiv HTML、ar5iv）。
+- `obsidian-client` 在 `buildClipTarget` 时逐个探测可达性（`HEAD` -> `GET` 回退）。
+- 只写可达的第一个候选为 `html_url`。
+- 失败则 `html_url` 置空。
+- 不再单独写 `html_url_verified`，避免冗余字段污染数据库。
+
+## Paper Database Strategy
+
+- 数据库入口为 Vault 根目录 `/PaperClipper.base`。
+- 仓库模板为 `templates/PaperClipper.base`。
+- Options 页面提供显式创建按钮，通过 `obsidian://new` 创建根目录 `PaperClipper.base`。
+- 默认纳管 `Papers/arXiv` 下的 Markdown note。
+- Base 默认视图只展示人读论文时需要扫描和筛选的字段：
+  - `short_title`
+  - `file.name`（打开 note 的入口）
+  - `title`
+  - `status`
+  - `category`
+  - `publish_date`
+  - `abstract`
+- `authors`、`url`、`html_url`、`pdf_url`、`code_url` 保留在 note frontmatter 中，但默认不展示在数据库主视图。
+
+## Paper Image Assets
+
+Paper Clipper 首次导入不自动下载论文图片。图片资产由后续阅读流程触发，例如 Codex / Claude Code 根据 `html_url` 阅读原文后提取关键图片。
+
+Recommended layout:
+
+- note: `Papers/arXiv/{arxiv_id}.md`
+- images: `Papers/arXiv/assets/{arxiv_id}/`
+
+Recommended names:
+
+- `fig01-overview.png`
+- `fig02-method.png`
+- `fig03-architecture.png`
+- `fig04-results.png`
+
+Only save images that are actually used by the reading note, such as overview figures, architecture figures, key experiment results, and important qualitative examples.
+
+Use standard Markdown relative paths when inserting images into notes:
+
+- `![overview](assets/{arxiv_id}/fig01-overview.png)`
 
 PDF files should not be downloaded in the MVP unless the link-only workflow proves insufficient. Obsidian URI is not a reliable binary attachment transport, and automatic attachment writing would likely require an Obsidian plugin, local service, or explicit browser download workflow.
 

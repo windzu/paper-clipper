@@ -8,8 +8,11 @@ const elements = {
   authors: document.getElementById("authors"),
   htmlSource: document.getElementById("htmlSource"),
   clipButton: document.getElementById("clipButton"),
+  openExistingButton: document.getElementById("openExistingButton"),
   optionsButton: document.getElementById("optionsButton")
 };
+
+let duplicateRecord = null;
 
 function setStatus(message, tone = "") {
   elements.status.textContent = message;
@@ -38,12 +41,16 @@ async function parseCurrentPaper(tab) {
 
 function renderPaper(paper) {
   currentPaper = paper;
+  duplicateRecord = null;
   elements.title.textContent = paper.title;
   elements.arxivId.textContent = paper.arxivId;
   elements.authors.textContent = paper.authors.join(", ");
   elements.htmlSource.textContent = paper.htmlSource || "unknown";
   elements.preview.classList.remove("hidden");
   elements.clipButton.disabled = false;
+  elements.openExistingButton.classList.add("hidden");
+  elements.openExistingButton.disabled = true;
+  elements.openExistingButton.textContent = "Open imported note";
   setStatus("Ready to clip.", "success");
 }
 
@@ -74,7 +81,7 @@ elements.clipButton.addEventListener("click", async () => {
   if (!currentPaper) return;
 
   elements.clipButton.disabled = true;
-  setStatus("Opening Obsidian...");
+  setStatus("Preparing...");
 
   try {
     const response = await chrome.runtime.sendMessage({
@@ -83,6 +90,18 @@ elements.clipButton.addEventListener("click", async () => {
     });
 
     if (!response || !response.ok) {
+      if (response && response.reason === "DUPLICATE") {
+        duplicateRecord = {
+          vaultName: response.vaultName || "",
+          filePath: response.filePath
+        };
+        setStatus(`Already imported: ${response.filePath}`, "warning");
+        elements.clipButton.disabled = true;
+        elements.openExistingButton.disabled = false;
+        elements.openExistingButton.classList.remove("hidden");
+        return;
+      }
+
       throw new Error(response ? response.error : "No response from background worker.");
     }
 
@@ -90,6 +109,30 @@ elements.clipButton.addEventListener("click", async () => {
   } catch (error) {
     elements.clipButton.disabled = false;
     setStatus(error.message || "Could not open Obsidian.", "error");
+  }
+});
+
+elements.openExistingButton.addEventListener("click", async () => {
+  if (!duplicateRecord || !duplicateRecord.filePath) return;
+
+  elements.openExistingButton.disabled = true;
+  setStatus("Opening imported note...");
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "OPEN_NOTE",
+      vaultName: duplicateRecord.vaultName,
+      filePath: duplicateRecord.filePath
+    });
+
+    if (!response || !response.ok) {
+      throw new Error(response ? response.error : "No response from background worker.");
+    }
+
+    setStatus(`Opened ${response.filePath}`, "success");
+  } catch (error) {
+    elements.openExistingButton.disabled = false;
+    setStatus(error.message || "Could not open imported note.", "error");
   }
 });
 

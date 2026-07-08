@@ -14,7 +14,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://arxiv.org/*"
+    "https://arxiv.org/*",
+    "https://ar5iv.labs.arxiv.org/*"
   ],
   "action": {
     "default_popup": "popup/popup.html",
