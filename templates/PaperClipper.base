@@ -18,15 +18,15 @@ views:
   - type: table
     name: 全部
     order:
-      - note.short_title
+      - short_title
       - file.name
-      - note.title
-      - note.paper_status
-      - note.category
-      - note.publish_date
-      - note.abstract
+      - title
+      - paper_status
+      - category
+      - publish_date
+      - abstract
     sort:
-      - property: note.publish_date
+      - property: publish_date
         direction: DESC
   - type: table
     name: To Read
@@ -34,14 +34,14 @@ views:
       and:
         - note.paper_status == "To Read"
     order:
-      - note.short_title
+      - short_title
       - file.name
-      - note.title
-      - note.category
-      - note.publish_date
-      - note.abstract
+      - title
+      - category
+      - publish_date
+      - abstract
     sort:
-      - property: note.publish_date
+      - property: publish_date
         direction: DESC
   - type: table
     name: Reading
@@ -49,14 +49,14 @@ views:
       and:
         - note.paper_status == "Reading"
     order:
-      - note.short_title
+      - short_title
       - file.name
-      - note.title
-      - note.category
-      - note.publish_date
-      - note.abstract
+      - title
+      - category
+      - publish_date
+      - abstract
     sort:
-      - property: note.publish_date
+      - property: publish_date
         direction: DESC
   - type: table
     name: Done
@@ -64,14 +64,14 @@ views:
       and:
         - note.paper_status == "Done"
     order:
-      - note.short_title
+      - short_title
       - file.name
-      - note.title
-      - note.category
-      - note.publish_date
-      - note.abstract
+      - title
+      - category
+      - publish_date
+      - abstract
     sort:
-      - property: note.publish_date
+      - property: publish_date
         direction: DESC
   - type: table
     name: End2End
@@ -79,14 +79,14 @@ views:
       and:
         - note.category.contains("End2End")
     order:
-      - note.short_title
+      - short_title
       - file.name
-      - note.title
-      - note.paper_status
-      - note.publish_date
-      - note.abstract
+      - title
+      - paper_status
+      - publish_date
+      - abstract
     sort:
-      - property: note.publish_date
+      - property: publish_date
         direction: DESC
   - type: table
     name: BEV
@@ -94,14 +94,14 @@ views:
       and:
         - note.category.contains("BEV")
     order:
-      - note.short_title
+      - short_title
       - file.name
-      - note.title
-      - note.paper_status
-      - note.publish_date
-      - note.abstract
+      - title
+      - paper_status
+      - publish_date
+      - abstract
     sort:
-      - property: note.publish_date
+      - property: publish_date
         direction: DESC
   - type: table
     name: Occupancy
@@ -109,12 +109,12 @@ views:
       and:
         - note.category.contains("Occupancy")
     order:
-      - note.short_title
+      - short_title
       - file.name
-      - note.title
-      - note.paper_status
-      - note.publish_date
-      - note.abstract
+      - title
+      - paper_status
+      - publish_date
+      - abstract
     sort:
-      - property: note.publish_date
+      - property: publish_date
         direction: DESC

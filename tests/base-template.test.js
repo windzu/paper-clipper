@@ -10,9 +10,9 @@ const template = fs.readFileSync(
 
 test("uses property identifiers instead of display names in base views", () => {
   assert.match(template, /^  note\.paper_status:$/m);
-  assert.match(template, /^      - note\.short_title$/m);
-  assert.match(template, /^      - note\.paper_status$/m);
-  assert.match(template, /^      - property: note\.publish_date$/m);
+  assert.match(template, /^      - short_title$/m);
+  assert.match(template, /^      - paper_status$/m);
+  assert.match(template, /^      - property: publish_date$/m);
   assert.doesNotMatch(template, /^\s+- (ShortTitle|Title|Status|Category|PublishDate|Abstract)$/m);
 });
 
