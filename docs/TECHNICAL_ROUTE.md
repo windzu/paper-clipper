@@ -25,7 +25,7 @@ Suggested structure:
 
 Suggested core files:
 
-- `parsers/arxiv.js`: extract paper metadata from arXiv pages.
+- `parsers/arxiv.js`: recognize arXiv abstract/HTML URLs and extract paper metadata.
 - `background/obsidian-client.js`: build file path, Markdown, and Obsidian URI.
 - `background/service-worker.js`: handle extension messages and open Obsidian.
 - `options/options.js`: store vault, folder, and default status.
@@ -98,6 +98,7 @@ Priority:
 ### Duplicate Import Rule
 
 - 去重主键为 `arxiv_id`。
+- `/abs/{id}`、`/html/{id}` 与带 `v1` 等版本后缀的 URL 统一为不含版本号的 `arxiv_id`，共享同一去重记录。
 - 同一论文若已导入，后台返回 `DUPLICATE` 并附带现存记录，不再重复触发 `obsidian://new`。
 - 目的是避免重复文件与重复行，保持数据库条目唯一性。
 - 弹窗层提供「Open imported note」动作，可直接打开历史文件。
@@ -105,6 +106,7 @@ Priority:
 ### html_url Rule
 
 - 解析器只负责给出候选列表（官方 arXiv HTML、ar5iv）。
+- 从官方 arXiv HTML 页面触发导入时，当前 HTML 页面作为第一候选；标题、作者、摘要、发布日期等字段仍从对应 abstract 页面解析，避免维护两套不一致的 DOM 提取规则。
 - `obsidian-client` 在 `buildClipTarget` 时逐个探测可达性（`HEAD` -> `GET` 回退）。
 - 只写可达的第一个候选为 `html_url`。
 - 失败则 `html_url` 置空。
@@ -174,7 +176,7 @@ MVP implementation starts with the primary route only. Clipboard fallback should
 
 ## MVP Acceptance
 
-- On an arXiv abstract page, clicking the extension opens Obsidian.
+- On an arXiv abstract or official HTML page, clicking the extension opens Obsidian.
 - A Markdown note is created in the configured vault/folder.
 - The file path is stable and based on arXiv ID.
 - Obsidian Properties include `html_url` and `pdf_url`.

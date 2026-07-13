@@ -19,8 +19,17 @@ function setStatus(message, tone = "") {
   elements.status.className = `status ${tone}`.trim();
 }
 
-function isArxivAbsPage(url) {
-  return /^https:\/\/arxiv\.org\/abs\/[^/?#]+/i.test(url || "");
+function isSupportedArxivPage(url) {
+  try {
+    const parsed = new URL(url || "");
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname === "arxiv.org" &&
+      /^\/(?:abs|html)\/[^/].*/i.test(parsed.pathname)
+    );
+  } catch (error) {
+    return false;
+  }
 }
 
 async function getActiveTab() {
@@ -57,9 +66,9 @@ function renderPaper(paper) {
 async function init() {
   try {
     const tab = await getActiveTab();
-    if (!tab || !isArxivAbsPage(tab.url)) {
+    if (!tab || !isSupportedArxivPage(tab.url)) {
       elements.title.textContent = "Unsupported page";
-      setStatus("Open an arXiv abstract page first.", "error");
+      setStatus("Open an arXiv abstract or HTML page first.", "error");
       return;
     }
 
