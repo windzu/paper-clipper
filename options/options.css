@@ -58,7 +58,8 @@ label span {
   font-weight: 700;
 }
 
-input {
+input,
+select {
   box-sizing: border-box;
   width: 100%;
   height: 42px;
@@ -130,7 +131,8 @@ button:disabled {
     color: #a8b6b8;
   }
 
-  input {
+  input,
+  select {
     border-color: #394346;
     background: #20272a;
     color: #edf1ef;

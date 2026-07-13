@@ -1,7 +1,7 @@
 const DEFAULT_CONFIG = {
   vaultName: "",
   targetFolder: "Papers/arXiv",
-  defaultStatus: "To Read"
+  defaultPaperStatus: PaperClipperSchema.DEFAULT_PAPER_STATUS
 };
 
 const form = document.getElementById("optionsForm");
@@ -12,8 +12,17 @@ const baseStatus = document.getElementById("baseStatus");
 const fields = {
   vaultName: document.getElementById("vaultName"),
   targetFolder: document.getElementById("targetFolder"),
-  defaultStatus: document.getElementById("defaultStatus")
+  defaultPaperStatus: document.getElementById("defaultPaperStatus")
 };
+
+function renderPaperStatusOptions() {
+  for (const status of PaperClipperSchema.PAPER_STATUSES) {
+    const option = document.createElement("option");
+    option.value = status;
+    option.textContent = status;
+    fields.defaultPaperStatus.append(option);
+  }
+}
 
 function normalizeFolder(folder) {
   return folder
@@ -26,21 +35,29 @@ function getFormConfig() {
   return {
     vaultName: fields.vaultName.value.trim(),
     targetFolder: normalizeFolder(fields.targetFolder.value.trim()),
-    defaultStatus: fields.defaultStatus.value.trim() || DEFAULT_CONFIG.defaultStatus
+    defaultPaperStatus: PaperClipperSchema.normalizePaperStatus(fields.defaultPaperStatus.value)
   };
 }
 
 async function saveCurrentOptions() {
   const config = getFormConfig();
   await chrome.storage.sync.set(config);
+  await chrome.storage.sync.remove("defaultStatus");
   return config;
 }
 
 async function loadOptions() {
-  const config = await chrome.storage.sync.get(DEFAULT_CONFIG);
+  const config = await chrome.storage.sync.get([
+    "vaultName",
+    "targetFolder",
+    "defaultPaperStatus",
+    "defaultStatus"
+  ]);
   fields.vaultName.value = config.vaultName || "";
   fields.targetFolder.value = config.targetFolder || DEFAULT_CONFIG.targetFolder;
-  fields.defaultStatus.value = config.defaultStatus || DEFAULT_CONFIG.defaultStatus;
+  fields.defaultPaperStatus.value = PaperClipperSchema.normalizePaperStatus(
+    config.defaultPaperStatus || config.defaultStatus
+  );
 }
 
 form.addEventListener("submit", async (event) => {
@@ -86,4 +103,5 @@ createBaseButton.addEventListener("click", async () => {
   }
 });
 
+renderPaperStatusOptions();
 loadOptions();

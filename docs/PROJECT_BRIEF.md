@@ -28,7 +28,7 @@ The Obsidian database view should expose the information needed to decide what t
 
 - title
 - short title
-- status
+- paper status
 - category
 - publish date
 - abstract
