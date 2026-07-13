@@ -1,10 +1,17 @@
-importScripts("obsidian-client.js");
+importScripts("../shared/paper-schema.js", "obsidian-client.js");
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.sync.get(PaperClipperObsidian.DEFAULT_CONFIG, (config) => {
+  chrome.storage.sync.get(null, (config) => {
+    const defaultPaperStatus = PaperClipperSchema.normalizePaperStatus(
+      config.defaultPaperStatus || config.defaultStatus
+    );
+
     chrome.storage.sync.set({
       ...PaperClipperObsidian.DEFAULT_CONFIG,
-      ...config
+      ...config,
+      defaultPaperStatus
+    }, () => {
+      chrome.storage.sync.remove("defaultStatus");
     });
   });
 });

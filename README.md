@@ -34,7 +34,7 @@ Paper Clipper is a browser extension for turning paper pages into Obsidian notes
 - Chrome Manifest V3 extension scaffold.
 - arXiv abstract- and HTML-page parser.
 - Popup preview and clip action.
-- Obsidian options for vault, target folder, and default status.
+- Obsidian options for vault, target folder, and default paper status.
 - Markdown generation with Obsidian Properties.
 - `html_url` priority: official arXiv HTML, then ar5iv.
 - Duplicate prevention: same `arxiv_id` will not be imported twice.
@@ -47,7 +47,7 @@ Paper Clipper is a browser extension for turning paper pages into Obsidian notes
 ## Design-first updates in this iteration
 
 - 重复导入保护：以 `arxiv_id` 为主键判断是否已存在，已导入则直接提示，不再重复生成文件。
-- 数据库设计收敛：默认 Base 只展示阅读管理字段，包括 `short_title`、`title`、`status`、`category`、`publish_date`、`abstract`。
+- 数据库设计收敛：默认 Base 只展示阅读管理字段，包括 `short_title`、`title`、`paper_status`、`category`、`publish_date`、`abstract`。
 - HTML 链接真实性：`html_url` 不再无脑写入候选页；会按优先级对候选地址进行可达性探测，仅可达的才写入 frontmatter。
 
 ### Property adequacy assessment
@@ -56,7 +56,7 @@ Paper Clipper is a browser extension for turning paper pages into Obsidian notes
 
 - `short_title`
 - `title`
-- `status`
+- `paper_status`
 - `category`
 - `publish_date`
 - `abstract`

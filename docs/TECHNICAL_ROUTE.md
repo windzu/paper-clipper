@@ -28,7 +28,8 @@ Suggested core files:
 - `parsers/arxiv.js`: recognize arXiv abstract/HTML URLs and extract paper metadata.
 - `background/obsidian-client.js`: build file path, Markdown, and Obsidian URI.
 - `background/service-worker.js`: handle extension messages and open Obsidian.
-- `options/options.js`: store vault, folder, and default status.
+- `shared/paper-schema.js`: define canonical paper statuses and legacy-value normalization.
+- `options/options.js`: store vault, folder, and default paper status.
 - `popup/popup.js`: detect supported page, preview paper, trigger clipping.
 
 ## Obsidian Config
@@ -37,12 +38,12 @@ Minimum settings:
 
 - `vaultName`: Obsidian vault name, not filesystem path.
 - `targetFolder`: folder inside vault, for example `Papers/arXiv`.
-- `defaultStatus`: default reading state, for example `To Read`.
+- `defaultPaperStatus`: default paper reading state, one of `To Read`, `Reading`, or `Done`.
 
 MVP defaults:
 
 - `targetFolder`: `Papers/arXiv`
-- `defaultStatus`: `To Read`
+- `defaultPaperStatus`: `To Read`
 
 ## File Naming
 
@@ -68,7 +69,7 @@ Recommended frontmatter fields:
 - `pdf_url`
 - `code_url`
 - `publish_date`
-- `status`
+- `paper_status`
 - `category`
 - `abstract`
 
@@ -122,7 +123,7 @@ Priority:
   - `short_title`
   - `file.name`（打开 note 的入口）
   - `title`
-  - `status`
+  - `paper_status`
   - `category`
   - `publish_date`
   - `abstract`

@@ -21,7 +21,7 @@ The generated Obsidian paper note should include these frontmatter fields when a
 - `short_title`
 - `authors`
 - `publish_date`
-- `status`
+- `paper_status`
 - `category`
 - `abstract`
 

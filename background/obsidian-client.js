@@ -1,10 +1,12 @@
 (function () {
   "use strict";
 
+  const { DEFAULT_PAPER_STATUS, PAPER_STATUSES, normalizePaperStatus } = self.PaperClipperSchema;
+
   const DEFAULT_CONFIG = {
     vaultName: "",
     targetFolder: "Papers/arXiv",
-    defaultStatus: "To Read",
+    defaultPaperStatus: DEFAULT_PAPER_STATUS,
     htmlProbeTimeoutMs: 2500
   };
 
@@ -172,7 +174,7 @@
   }
 
   function buildMarkdown(config, paper) {
-    const status = config.defaultStatus || DEFAULT_CONFIG.defaultStatus;
+    const paperStatus = normalizePaperStatus(config.defaultPaperStatus);
 
     return [
       "---",
@@ -185,7 +187,7 @@
       `pdf_url: ${yamlScalar(paper.pdfUrl)}`,
       `code_url: ${yamlScalar(paper.codeUrl)}`,
       `publish_date: ${yamlScalar(paper.publishDate)}`,
-      `status: ${yamlScalar(status)}`,
+      `paper_status: ${yamlScalar(paperStatus)}`,
       yamlListField("category", paper.category),
       `abstract: ${yamlScalar(paper.abstract)}`,
       "---",
@@ -324,6 +326,7 @@
 
   self.PaperClipperObsidian = {
     DEFAULT_CONFIG,
+    PAPER_STATUSES,
     buildClipTarget,
     buildFilePath,
     buildMarkdown,
@@ -333,6 +336,7 @@
     markImported,
     getImportKey,
     normalizeArxivId,
+    normalizePaperStatus,
     buildObsidianOpenUri
   };
 })();
