@@ -13,7 +13,7 @@ Because of this, Paper Clipper should start as a clean project instead of deeply
 
 ## User Workflow
 
-1. Open an arXiv paper page, such as `https://arxiv.org/abs/2505.xxxxx`.
+1. Open an arXiv abstract or official HTML page, such as `https://arxiv.org/abs/2505.xxxxx` or `https://arxiv.org/html/2505.xxxxx`.
 2. Click the Paper Clipper browser extension.
 3. The extension parses the paper metadata.
 4. The extension generates a Markdown note with Obsidian Properties.

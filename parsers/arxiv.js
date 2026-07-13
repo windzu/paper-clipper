@@ -1,22 +1,35 @@
-(function () {
+(async function () {
   "use strict";
 
   function cleanText(text) {
     return (text || "").replace(/\s+/g, " ").trim();
   }
 
-  function extractPaperId() {
-    const match = window.location.href.match(/arxiv\.org\/abs\/([^/?#]+)/i);
-    if (!match) return "";
+  function parseArxivPageUrl(rawUrl) {
     try {
-      return decodeURIComponent(match[1]);
+      const url = new URL(rawUrl || "");
+      if (url.protocol !== "https:" || url.hostname !== "arxiv.org") return null;
+
+      const match = url.pathname.match(/^\/(abs|html)\/(.+?)\/?$/i);
+      if (!match) return null;
+
+      const sourceId = decodeURIComponent(match[2]);
+      const arxivId = sourceId.replace(/v\d+$/i, "");
+      if (!arxivId) return null;
+
+      return {
+        pageType: match[1].toLowerCase(),
+        arxivId,
+        sourceId,
+        pageUrl: `${url.origin}/${match[1].toLowerCase()}/${encodeURI(sourceId)}`
+      };
     } catch (error) {
-      return match[1];
+      return null;
     }
   }
 
-  function extractTitle() {
-    const titleEl = document.querySelector("h1.title");
+  function extractTitle(sourceDocument) {
+    const titleEl = sourceDocument.querySelector("h1.title");
     if (!titleEl) return "";
     return cleanText(titleEl.textContent.replace(/^Title:\s*/i, ""));
   }
@@ -26,8 +39,8 @@
     return match ? match[1] : "";
   }
 
-  function extractAuthors() {
-    const authorsEl = document.querySelector(".authors");
+  function extractAuthors(sourceDocument) {
+    const authorsEl = sourceDocument.querySelector(".authors");
     if (!authorsEl) return [];
 
     const linkedAuthors = Array.from(authorsEl.querySelectorAll("a"))
@@ -40,8 +53,8 @@
     return authors ? authors.split(/\s*,\s*/).filter(Boolean) : [];
   }
 
-  function extractAbstract() {
-    const abstractEl = document.querySelector("blockquote.abstract");
+  function extractAbstract(sourceDocument) {
+    const abstractEl = sourceDocument.querySelector("blockquote.abstract");
     if (!abstractEl) return "";
     return cleanText(abstractEl.textContent.replace(/^Abstract:\s*/i, ""));
   }
@@ -56,12 +69,19 @@
     });
   }
 
-  function extractHtmlCandidates(paperId) {
+  function extractHtmlCandidates(sourceDocument, paperId, currentHtmlUrl) {
     if (!paperId) return [];
 
     const candidates = [];
 
-    const officialLink = Array.from(document.querySelectorAll("a[href]"))
+    if (currentHtmlUrl) {
+      candidates.push({
+        url: currentHtmlUrl,
+        source: "arxiv"
+      });
+    }
+
+    const officialLink = Array.from(sourceDocument.querySelectorAll("a[href]"))
       .map((link) => link.href)
       .find((href) => /^https:\/\/arxiv\.org\/html\//i.test(href));
 
@@ -108,8 +128,8 @@
     return `${match[3]}-${monthToNumber(match[2])}-${match[1].padStart(2, "0")}`;
   }
 
-  function extractPublishDate() {
-    const submissionEl = document.querySelector(".submission-history");
+  function extractPublishDate(sourceDocument) {
+    const submissionEl = sourceDocument.querySelector(".submission-history");
     if (submissionEl) {
       const text = submissionEl.textContent || "";
       const v1Match = text.match(/\[v1\][^\d]*(\d{1,2}\s+\w+\s+\d{4})/);
@@ -119,15 +139,15 @@
       if (anyMatch) return parseToISODate(anyMatch[1]);
     }
 
-    const datelineEl = document.querySelector(".dateline");
+    const datelineEl = sourceDocument.querySelector(".dateline");
     if (!datelineEl) return "";
 
     const datelineMatch = datelineEl.textContent.match(/(\d{1,2}\s+\w+\s+\d{4})/);
     return datelineMatch ? parseToISODate(datelineMatch[1]) : "";
   }
 
-  function extractCodeUrl() {
-    const abstractEl = document.querySelector("blockquote.abstract");
+  function extractCodeUrl(sourceDocument) {
+    const abstractEl = sourceDocument.querySelector("blockquote.abstract");
     if (!abstractEl) return "";
 
     const links = Array.from(abstractEl.querySelectorAll("a[href]")).map((link) => link.href);
@@ -145,30 +165,48 @@
     return "";
   }
 
-  function extractPaperData() {
-    const arxivId = extractPaperId();
-    if (!arxivId) return null;
+  async function fetchAbstractDocument(arxivId) {
+    const response = await fetch(`https://arxiv.org/abs/${encodeURI(arxivId)}`);
+    if (!response.ok) {
+      throw new Error(`Could not load arXiv abstract page (${response.status}).`);
+    }
 
-    const title = extractTitle();
+    const html = await response.text();
+    return new DOMParser().parseFromString(html, "text/html");
+  }
+
+  async function extractPaperData() {
+    const page = parseArxivPageUrl(window.location.href);
+    if (!page) return null;
+
+    const sourceDocument =
+      page.pageType === "html" ? await fetchAbstractDocument(page.arxivId) : document;
+
+    const title = extractTitle(sourceDocument);
     if (!title) return null;
 
-    const htmlCandidates = extractHtmlCandidates(arxivId);
+    const currentHtmlUrl = page.pageType === "html" ? page.pageUrl : "";
+    const htmlCandidates = extractHtmlCandidates(
+      sourceDocument,
+      page.arxivId,
+      currentHtmlUrl
+    );
 
     return {
       title,
       shortTitle: extractShortTitle(title),
-      authors: extractAuthors(),
-      abstract: extractAbstract(),
-      arxivId,
-      url: `https://arxiv.org/abs/${arxivId}`,
+      authors: extractAuthors(sourceDocument),
+      abstract: extractAbstract(sourceDocument),
+      arxivId: page.arxivId,
+      url: `https://arxiv.org/abs/${page.arxivId}`,
       htmlCandidates,
       htmlUrl: htmlCandidates[0] ? htmlCandidates[0].url : "",
       htmlSource: htmlCandidates[0] ? htmlCandidates[0].source : "",
-      pdfUrl: buildPdfUrl(arxivId),
-      codeUrl: extractCodeUrl(),
-      publishDate: extractPublishDate()
+      pdfUrl: buildPdfUrl(page.arxivId),
+      codeUrl: extractCodeUrl(sourceDocument),
+      publishDate: extractPublishDate(sourceDocument)
     };
   }
 
-  return extractPaperData();
+  return await extractPaperData();
 })();

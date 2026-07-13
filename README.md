@@ -13,7 +13,7 @@ Paper Clipper is a browser extension for turning paper pages into Obsidian notes
 
 ## MVP Scope
 
-- Support arXiv abstract pages.
+- Support official arXiv abstract and HTML pages.
 - Extract paper title, authors, abstract, arXiv ID, publish date, source URL, PDF URL, HTML URL, and code URL.
 - Generate a structured Obsidian note.
 - Open Obsidian through `obsidian://new`.
@@ -32,7 +32,7 @@ Paper Clipper is a browser extension for turning paper pages into Obsidian notes
 ## Current Implementation
 
 - Chrome Manifest V3 extension scaffold.
-- arXiv abstract-page parser.
+- arXiv abstract- and HTML-page parser.
 - Popup preview and clip action.
 - Obsidian options for vault, target folder, and default status.
 - Markdown generation with Obsidian Properties.
@@ -42,6 +42,7 @@ Paper Clipper is a browser extension for turning paper pages into Obsidian notes
 - Duplicate UX: when paper already exists, popup shows `Already imported` with an `Open imported note` action.
 - Options page can create the root-level `PaperClipper.base` from the bundled template.
 - Stable note path: `{targetFolder}/{arxiv_id}.md`.
+- URL normalization: `/abs/`, `/html/`, and versioned URLs share the same versionless `arxiv_id` and duplicate record.
 
 ## Design-first updates in this iteration
 
@@ -107,6 +108,6 @@ If you change `SKILL.md` metadata, restart Codex. Script changes are picked up t
 3. Load this folder as an unpacked extension.
 4. Open the extension options and set the Obsidian vault name.
 5. Click `Create PaperClipper Base` in options if `/PaperClipper.base` does not exist.
-6. Open an arXiv abstract page and click Paper Clipper.
+6. Open an arXiv abstract or official HTML page and click Paper Clipper.
 
 For database-first usage and base schema, see [docs/PAPER_DATABASE_DESIGN_DRAFT.md](/Users/wind/Projects/paper-clipper/docs/PAPER_DATABASE_DESIGN_DRAFT.md). Base template: [templates/PaperClipper.base](/Users/wind/Projects/paper-clipper/templates/PaperClipper.base).

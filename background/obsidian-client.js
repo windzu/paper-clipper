@@ -17,6 +17,10 @@
       .replace(/\/{2,}/g, "/");
   }
 
+  function normalizeArxivId(arxivId) {
+    return String(arxivId || "").replace(/v\d+$/i, "");
+  }
+
   function sanitizeFileStem(stem) {
     const decoded = (() => {
       try {
@@ -44,7 +48,7 @@
 
   function buildFilePath(config, paper) {
     const folder = normalizeFolder(config.targetFolder);
-    const filename = `${sanitizeFileStem(paper.arxivId)}.md`;
+    const filename = `${sanitizeFileStem(normalizeArxivId(paper.arxivId))}.md`;
     return folder ? `${folder}/${filename}` : filename;
   }
 
@@ -229,8 +233,12 @@
       ...config
     };
 
-    const filePath = buildFilePath(mergedConfig, paper);
-    const resolvedPaper = await resolveHtmlUrl(paper, mergedConfig);
+    const normalizedPaper = {
+      ...paper,
+      arxivId: normalizeArxivId(paper.arxivId)
+    };
+    const filePath = buildFilePath(mergedConfig, normalizedPaper);
+    const resolvedPaper = await resolveHtmlUrl(normalizedPaper, mergedConfig);
     const markdown = buildMarkdown(mergedConfig, resolvedPaper);
     const uri = buildObsidianNewUri(mergedConfig, filePath, markdown);
 
@@ -248,7 +256,7 @@
   }
 
   function getImportKey(config, paper) {
-    if (paper?.arxivId) return `arxiv:${paper.arxivId}`;
+    if (paper?.arxivId) return `arxiv:${normalizeArxivId(paper.arxivId)}`;
     return `path:${buildFilePath(config, paper)}`;
   }
 
@@ -261,6 +269,20 @@
     const index = await getImportIndex();
     const key = getImportKey(mergedConfig, paper);
     const matched = index[key];
+
+    if (!matched && paper?.arxivId) {
+      const normalizedId = normalizeArxivId(paper.arxivId);
+      const legacyMatch = Object.values(index).find(
+        (record) => normalizeArxivId(record && record.arxivId) === normalizedId
+      );
+
+      if (legacyMatch) {
+        return {
+          exists: true,
+          record: legacyMatch
+        };
+      }
+    }
 
     if (!matched) {
       return {
@@ -284,7 +306,7 @@
     const key = getImportKey(mergedConfig, paper);
 
     index[key] = {
-      arxivId: paper.arxivId || "",
+      arxivId: normalizeArxivId(paper.arxivId),
       title: paper.title || "",
       filePath: buildFilePath(mergedConfig, paper),
       htmlUrl: paper.htmlUrl || "",
@@ -310,6 +332,7 @@
     checkImported,
     markImported,
     getImportKey,
+    normalizeArxivId,
     buildObsidianOpenUri
   };
 })();
