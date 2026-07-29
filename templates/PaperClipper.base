@@ -118,3 +118,48 @@ views:
     sort:
       - property: publish_date
         direction: DESC
+  - type: table
+    name: Tracking
+    filters:
+      and:
+        - note.category.contains("Tracking")
+    order:
+      - short_title
+      - file.name
+      - title
+      - paper_status
+      - publish_date
+      - abstract
+    sort:
+      - property: publish_date
+        direction: DESC
+  - type: table
+    name: Reconstruction
+    filters:
+      and:
+        - note.category.contains("Reconstruction")
+    order:
+      - short_title
+      - file.name
+      - title
+      - paper_status
+      - publish_date
+      - abstract
+    sort:
+      - property: publish_date
+        direction: DESC
+  - type: table
+    name: Domain Adaptation
+    filters:
+      and:
+        - note.category.contains("Domain Adaptation")
+    order:
+      - short_title
+      - file.name
+      - title
+      - paper_status
+      - publish_date
+      - abstract
+    sort:
+      - property: publish_date
+        direction: DESC

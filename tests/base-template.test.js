@@ -22,3 +22,22 @@ test("uses only the namespaced paper status in base filters", () => {
   assert.match(template, /note\.paper_status == "Done"/);
   assert.doesNotMatch(template, /note\.status/);
 });
+
+test("provides canonical research category views", () => {
+  for (const category of [
+    "End2End",
+    "BEV",
+    "Occupancy",
+    "Tracking",
+    "Reconstruction",
+    "Domain Adaptation"
+  ]) {
+    assert.match(template, new RegExp(`name: ${category}`));
+    assert.match(
+      template,
+      new RegExp(`note\\.category\\.contains\\("${category}"\\)`)
+    );
+  }
+
+  assert.doesNotMatch(template, /Category ==/);
+});
