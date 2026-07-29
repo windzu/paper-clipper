@@ -8,6 +8,10 @@ const form = document.getElementById("optionsForm");
 const saveStatus = document.getElementById("saveStatus");
 const createBaseButton = document.getElementById("createBaseButton");
 const baseStatus = document.getElementById("baseStatus");
+const rebuildIndexButton = document.getElementById("rebuildIndexButton");
+const paperFolderPicker = document.getElementById("paperFolderPicker");
+const indexStatus = document.getElementById("indexStatus");
+let pendingIndexConfig = null;
 
 const fields = {
   vaultName: document.getElementById("vaultName"),
@@ -100,6 +104,68 @@ createBaseButton.addEventListener("click", async () => {
     baseStatus.textContent = error.message || "Could not create base.";
   } finally {
     createBaseButton.disabled = false;
+  }
+});
+
+rebuildIndexButton.addEventListener("click", () => {
+  const config = getFormConfig();
+  if (!config.vaultName) {
+    indexStatus.textContent = "Vault name is required.";
+    return;
+  }
+
+  if (!config.targetFolder) {
+    indexStatus.textContent = "Target folder is required.";
+    return;
+  }
+
+  pendingIndexConfig = config;
+  paperFolderPicker.value = "";
+  paperFolderPicker.click();
+});
+
+paperFolderPicker.addEventListener("change", async () => {
+  const files = Array.from(paperFolderPicker.files || []);
+  if (!pendingIndexConfig || files.length === 0) return;
+
+  rebuildIndexButton.disabled = true;
+  indexStatus.textContent = "Scanning paper notes...";
+
+  try {
+    await chrome.storage.sync.set(pendingIndexConfig);
+    const scan = await PaperClipperIndex.scanPaperFiles(
+      files,
+      pendingIndexConfig.targetFolder
+    );
+
+    if (scan.records.length === 0) {
+      throw new Error(`No paper notes found under ${pendingIndexConfig.targetFolder}.`);
+    }
+
+    const response = await chrome.runtime.sendMessage({
+      type: "REBUILD_IMPORT_INDEX",
+      records: scan.records
+    });
+
+    if (!response || !response.ok) {
+      throw new Error(response ? response.error : "No response from background worker.");
+    }
+
+    const details = [];
+    if (scan.invalidFiles > 0) details.push(`${scan.invalidFiles} missing arxiv_id`);
+    if (scan.duplicateFiles.length > 0) {
+      details.push(`${scan.duplicateFiles.length} duplicate files ignored`);
+    }
+
+    indexStatus.textContent =
+      `Indexed ${response.indexedCount} papers.` +
+      (details.length > 0 ? ` ${details.join(", ")}.` : "");
+  } catch (error) {
+    indexStatus.textContent = error.message || "Could not rebuild import index.";
+  } finally {
+    pendingIndexConfig = null;
+    rebuildIndexButton.disabled = false;
+    paperFolderPicker.value = "";
   }
 });
 

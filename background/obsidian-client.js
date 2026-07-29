@@ -10,7 +10,8 @@
     htmlProbeTimeoutMs: 2500
   };
 
-  const DEDUPE_INDEX_KEY = "__paper_clipper_imported_by_file__";
+  const DEDUPE_INDEX_KEY = "__paper_clipper_import_index_v2__";
+  const LEGACY_DEDUPE_INDEX_KEY = "__paper_clipper_imported_by_file__";
 
   function normalizeFolder(folder) {
     return (folder || "")
@@ -252,14 +253,47 @@
     };
   }
 
+  function getImportScope(config) {
+    const vaultName = String(config.vaultName || "").trim();
+    const folder = normalizeFolder(config.targetFolder);
+    return `${encodeURIComponent(vaultName)}:${encodeURIComponent(folder)}`;
+  }
+
+  function recordMatchesScope(record, config) {
+    if (!record) return false;
+
+    const configVault = String(config.vaultName || "").trim();
+    const configFolder = normalizeFolder(config.targetFolder);
+    const recordVault = String(record.vaultName || "").trim();
+    const recordFolder = normalizeFolder(record.folder);
+
+    if (recordVault && recordVault !== configVault) return false;
+    if (recordFolder && recordFolder !== configFolder) return false;
+    return true;
+  }
+
   async function getImportIndex() {
-    const store = await chrome.storage.sync.get(DEDUPE_INDEX_KEY);
-    return store[DEDUPE_INDEX_KEY] || {};
+    const localStore = await chrome.storage.local.get(DEDUPE_INDEX_KEY);
+    const localIndex = localStore[DEDUPE_INDEX_KEY] || {};
+    if (Object.keys(localIndex).length > 0) return localIndex;
+
+    const legacyStore = await chrome.storage.sync.get(LEGACY_DEDUPE_INDEX_KEY);
+    const legacyIndex = legacyStore[LEGACY_DEDUPE_INDEX_KEY] || {};
+    if (Object.keys(legacyIndex).length > 0) {
+      await chrome.storage.local.set({ [DEDUPE_INDEX_KEY]: legacyIndex });
+    }
+
+    return legacyIndex;
+  }
+
+  async function saveImportIndex(index) {
+    await chrome.storage.local.set({ [DEDUPE_INDEX_KEY]: index });
   }
 
   function getImportKey(config, paper) {
-    if (paper?.arxivId) return `arxiv:${normalizeArxivId(paper.arxivId)}`;
-    return `path:${buildFilePath(config, paper)}`;
+    const scope = getImportScope(config);
+    if (paper?.arxivId) return `${scope}:arxiv:${normalizeArxivId(paper.arxivId)}`;
+    return `${scope}:path:${buildFilePath(config, paper)}`;
   }
 
   async function checkImported(config, paper) {
@@ -275,7 +309,9 @@
     if (!matched && paper?.arxivId) {
       const normalizedId = normalizeArxivId(paper.arxivId);
       const legacyMatch = Object.values(index).find(
-        (record) => normalizeArxivId(record && record.arxivId) === normalizedId
+        (record) =>
+          normalizeArxivId(record && record.arxivId) === normalizedId &&
+          recordMatchesScope(record, mergedConfig)
       );
 
       if (legacyMatch) {
@@ -317,15 +353,56 @@
       updatedAt: new Date().toISOString()
     };
 
-    await chrome.storage.sync.set({ [DEDUPE_INDEX_KEY]: index });
+    await saveImportIndex(index);
 
     return {
       exists: true
     };
   }
 
+  async function rebuildImportIndex(config, records = []) {
+    const mergedConfig = {
+      ...DEFAULT_CONFIG,
+      ...config
+    };
+    const existingIndex = await getImportIndex();
+    const rebuiltIndex = {};
+
+    for (const [key, record] of Object.entries(existingIndex)) {
+      if (!recordMatchesScope(record, mergedConfig)) {
+        rebuiltIndex[key] = record;
+      }
+    }
+
+    let indexedCount = 0;
+    for (const record of records) {
+      const arxivId = normalizeArxivId(record && record.arxivId);
+      if (!arxivId || !record.filePath) continue;
+
+      const normalizedRecord = {
+        arxivId,
+        title: record.title || "",
+        filePath: record.filePath,
+        htmlUrl: record.htmlUrl || "",
+        vaultName: mergedConfig.vaultName || "",
+        folder: normalizeFolder(mergedConfig.targetFolder),
+        updatedAt: new Date().toISOString()
+      };
+
+      rebuiltIndex[getImportKey(mergedConfig, normalizedRecord)] = normalizedRecord;
+      indexedCount += 1;
+    }
+
+    await saveImportIndex(rebuiltIndex);
+    return {
+      indexedCount,
+      totalCount: Object.keys(rebuiltIndex).length
+    };
+  }
+
   self.PaperClipperObsidian = {
     DEFAULT_CONFIG,
+    DEDUPE_INDEX_KEY,
     PAPER_STATUSES,
     buildClipTarget,
     buildFilePath,
@@ -334,6 +411,7 @@
     pickBestHtmlUrl,
     checkImported,
     markImported,
+    rebuildImportIndex,
     getImportKey,
     normalizeArxivId,
     normalizePaperStatus,
