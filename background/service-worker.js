@@ -20,13 +20,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (
     message.type !== "CLIP_PAPER" &&
     message.type !== "OPEN_NOTE" &&
-    message.type !== "CREATE_BASE"
+    message.type !== "CREATE_BASE" &&
+    message.type !== "REBUILD_IMPORT_INDEX"
   ) {
     return false;
   }
 
   (async () => {
     const config = await chrome.storage.sync.get(PaperClipperObsidian.DEFAULT_CONFIG);
+
+    if (message.type === "REBUILD_IMPORT_INDEX") {
+      if (!config.vaultName) {
+        sendResponse({
+          ok: false,
+          error: "Missing Obsidian vault name. Open options and set vaultName first."
+        });
+        return;
+      }
+
+      const result = await PaperClipperObsidian.rebuildImportIndex(
+        config,
+        Array.isArray(message.records) ? message.records : []
+      );
+      sendResponse({
+        ok: true,
+        ...result
+      });
+      return;
+    }
 
     if (message.type === "CREATE_BASE") {
       if (!config.vaultName) {

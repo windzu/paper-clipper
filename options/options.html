@@ -43,8 +43,26 @@
           <span id="baseStatus" role="status"></span>
         </div>
       </section>
+
+      <section class="database">
+        <h2>Duplicate protection</h2>
+        <p>Select the configured paper folder to rebuild the local import index from existing notes.</p>
+        <div class="actions">
+          <button id="rebuildIndexButton" type="button" class="secondary">Rebuild import index</button>
+          <span id="indexStatus" role="status"></span>
+        </div>
+        <input
+          id="paperFolderPicker"
+          type="file"
+          accept=".md,text/markdown"
+          webkitdirectory
+          multiple
+          hidden
+        >
+      </section>
     </main>
     <script src="../shared/paper-schema.js"></script>
+    <script src="../shared/paper-index.js"></script>
     <script src="options.js"></script>
   </body>
 </html>
