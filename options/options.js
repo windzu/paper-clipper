@@ -8,10 +8,17 @@ const form = document.getElementById("optionsForm");
 const saveStatus = document.getElementById("saveStatus");
 const createBaseButton = document.getElementById("createBaseButton");
 const baseStatus = document.getElementById("baseStatus");
+const chooseFolderButton = document.getElementById("chooseFolderButton");
 const rebuildIndexButton = document.getElementById("rebuildIndexButton");
 const paperFolderPicker = document.getElementById("paperFolderPicker");
+const paperFolderStatus = document.getElementById("paperFolderStatus");
 const indexStatus = document.getElementById("indexStatus");
 let pendingIndexConfig = null;
+let paperDirectoryHandle = null;
+
+const supportsPersistentFolder =
+  typeof window.showDirectoryPicker === "function" &&
+  typeof window.indexedDB !== "undefined";
 
 const fields = {
   vaultName: document.getElementById("vaultName"),
@@ -64,6 +71,90 @@ async function loadOptions() {
   );
 }
 
+function renderPaperFolder() {
+  if (!supportsPersistentFolder) {
+    chooseFolderButton.hidden = true;
+    rebuildIndexButton.disabled = false;
+    paperFolderStatus.textContent = "Choose on each rebuild (compatibility mode)";
+    return;
+  }
+
+  chooseFolderButton.hidden = false;
+  chooseFolderButton.textContent = paperDirectoryHandle ? "Change folder" : "Choose folder";
+  rebuildIndexButton.disabled = !paperDirectoryHandle;
+  paperFolderStatus.textContent = paperDirectoryHandle
+    ? paperDirectoryHandle.name
+    : "Not selected";
+}
+
+async function loadPaperFolder() {
+  if (!supportsPersistentFolder) {
+    renderPaperFolder();
+    return;
+  }
+
+  try {
+    paperDirectoryHandle = await PaperClipperDirectory.getPaperFolder();
+  } catch (error) {
+    paperDirectoryHandle = null;
+    indexStatus.textContent = "Could not restore the saved paper folder.";
+  }
+
+  renderPaperFolder();
+}
+
+function validateIndexConfig() {
+  const config = getFormConfig();
+  if (!config.vaultName) {
+    throw new Error("Vault name is required.");
+  }
+
+  if (!config.targetFolder) {
+    throw new Error("Target folder is required.");
+  }
+
+  return config;
+}
+
+async function rebuildIndex(config, files) {
+  rebuildIndexButton.disabled = true;
+  chooseFolderButton.disabled = true;
+  indexStatus.textContent = "Scanning paper notes...";
+
+  try {
+    await chrome.storage.sync.set(config);
+    const scan = await PaperClipperIndex.scanPaperFiles(files, config.targetFolder);
+
+    if (scan.records.length === 0) {
+      throw new Error(`No paper notes found under ${config.targetFolder}.`);
+    }
+
+    const response = await chrome.runtime.sendMessage({
+      type: "REBUILD_IMPORT_INDEX",
+      records: scan.records
+    });
+
+    if (!response || !response.ok) {
+      throw new Error(response ? response.error : "No response from background worker.");
+    }
+
+    const details = [];
+    if (scan.invalidFiles > 0) details.push(`${scan.invalidFiles} missing arxiv_id`);
+    if (scan.duplicateFiles.length > 0) {
+      details.push(`${scan.duplicateFiles.length} duplicate files ignored`);
+    }
+
+    indexStatus.textContent =
+      `Indexed ${response.indexedCount} papers.` +
+      (details.length > 0 ? ` ${details.join(", ")}.` : "");
+  } catch (error) {
+    indexStatus.textContent = error.message || "Could not rebuild import index.";
+  } finally {
+    chooseFolderButton.disabled = false;
+    renderPaperFolder();
+  }
+}
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -107,67 +198,77 @@ createBaseButton.addEventListener("click", async () => {
   }
 });
 
-rebuildIndexButton.addEventListener("click", () => {
-  const config = getFormConfig();
-  if (!config.vaultName) {
-    indexStatus.textContent = "Vault name is required.";
+chooseFolderButton.addEventListener("click", async () => {
+  if (!supportsPersistentFolder) return;
+
+  chooseFolderButton.disabled = true;
+  try {
+    const directoryHandle = await window.showDirectoryPicker({
+      id: "paper-clipper-index-folder",
+      mode: "read",
+      startIn: paperDirectoryHandle || undefined
+    });
+    await PaperClipperDirectory.setPaperFolder(directoryHandle);
+    paperDirectoryHandle = directoryHandle;
+    indexStatus.textContent = "Paper folder saved.";
+    renderPaperFolder();
+  } catch (error) {
+    if (error && error.name === "AbortError") return;
+    indexStatus.textContent = error.message || "Could not save the paper folder.";
+  } finally {
+    chooseFolderButton.disabled = false;
+    renderPaperFolder();
+  }
+});
+
+rebuildIndexButton.addEventListener("click", async () => {
+  let config;
+  try {
+    config = validateIndexConfig();
+  } catch (error) {
+    indexStatus.textContent = error.message;
     return;
   }
 
-  if (!config.targetFolder) {
-    indexStatus.textContent = "Target folder is required.";
+  if (!supportsPersistentFolder) {
+    pendingIndexConfig = config;
+    paperFolderPicker.value = "";
+    paperFolderPicker.click();
     return;
   }
 
-  pendingIndexConfig = config;
-  paperFolderPicker.value = "";
-  paperFolderPicker.click();
+  rebuildIndexButton.disabled = true;
+  chooseFolderButton.disabled = true;
+  indexStatus.textContent = "Reading the saved paper folder...";
+
+  try {
+    const hasPermission = await PaperClipperDirectory.ensureReadPermission(
+      paperDirectoryHandle
+    );
+    if (!hasPermission) {
+      throw new Error("Paper folder access was not granted.");
+    }
+
+    const files = await PaperClipperDirectory.collectPaperFiles(paperDirectoryHandle);
+    await rebuildIndex(config, files);
+  } catch (error) {
+    indexStatus.textContent = error.message || "Could not read the paper folder.";
+    chooseFolderButton.disabled = false;
+    renderPaperFolder();
+  }
 });
 
 paperFolderPicker.addEventListener("change", async () => {
   const files = Array.from(paperFolderPicker.files || []);
   if (!pendingIndexConfig || files.length === 0) return;
 
-  rebuildIndexButton.disabled = true;
-  indexStatus.textContent = "Scanning paper notes...";
-
   try {
-    await chrome.storage.sync.set(pendingIndexConfig);
-    const scan = await PaperClipperIndex.scanPaperFiles(
-      files,
-      pendingIndexConfig.targetFolder
-    );
-
-    if (scan.records.length === 0) {
-      throw new Error(`No paper notes found under ${pendingIndexConfig.targetFolder}.`);
-    }
-
-    const response = await chrome.runtime.sendMessage({
-      type: "REBUILD_IMPORT_INDEX",
-      records: scan.records
-    });
-
-    if (!response || !response.ok) {
-      throw new Error(response ? response.error : "No response from background worker.");
-    }
-
-    const details = [];
-    if (scan.invalidFiles > 0) details.push(`${scan.invalidFiles} missing arxiv_id`);
-    if (scan.duplicateFiles.length > 0) {
-      details.push(`${scan.duplicateFiles.length} duplicate files ignored`);
-    }
-
-    indexStatus.textContent =
-      `Indexed ${response.indexedCount} papers.` +
-      (details.length > 0 ? ` ${details.join(", ")}.` : "");
-  } catch (error) {
-    indexStatus.textContent = error.message || "Could not rebuild import index.";
+    await rebuildIndex(pendingIndexConfig, files);
   } finally {
     pendingIndexConfig = null;
-    rebuildIndexButton.disabled = false;
     paperFolderPicker.value = "";
   }
 });
 
 renderPaperStatusOptions();
-loadOptions();
+Promise.all([loadOptions(), loadPaperFolder()]);
