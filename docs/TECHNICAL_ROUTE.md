@@ -30,6 +30,7 @@ Suggested core files:
 - `background/service-worker.js`: handle extension messages and open Obsidian.
 - `shared/paper-schema.js`: define canonical paper statuses and legacy-value normalization.
 - `shared/paper-index.js`: parse selected paper notes and build a canonical arXiv import index.
+- `shared/paper-directory.js`: persist the selected directory handle and restore read access for later index rebuilds.
 - `options/options.js`: store vault, folder, and default paper status.
 - `popup/popup.js`: detect supported page, preview paper, trigger clipping.
 
@@ -103,7 +104,7 @@ Priority:
 - `/abs/{id}`、`/html/{id}` 与带 `v1` 等版本后缀的 URL 统一为不含版本号的 `arxiv_id`，共享同一去重记录。
 - 去重范围由 `vaultName + targetFolder` 隔离，避免不同 Vault 或论文目录互相污染。
 - 去重索引存储在 `chrome.storage.local`；旧版 `chrome.storage.sync` 索引首次使用时自动迁移。
-- 对已有论文目录，Options 页面通过用户显式选择目录读取顶层 Markdown note，并按 frontmatter `arxiv_id` 重建索引。该流程不需要本地 service 或 Obsidian 插件。
+- 对已有论文目录，Options 页面通过用户显式选择目录读取顶层 Markdown note，并按 frontmatter `arxiv_id` 重建索引。目录句柄存储在扩展自身的 IndexedDB 中，后续重建直接复用；仅更换目录或权限过期时需要再次操作。该流程不需要本地 service 或 Obsidian 插件。
 - 同一论文若已导入，后台返回 `DUPLICATE` 并附带现存记录，不再重复触发 `obsidian://new`。
 - 目的是避免重复文件与重复行，保持数据库条目唯一性。
 - 弹窗层提供「Open imported note」动作，可直接打开历史文件。

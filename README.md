@@ -41,7 +41,7 @@ Paper Clipper is a browser extension for turning paper pages into Obsidian notes
 - `html_url` is validated before writing; if no HTML page is reachable, it remains empty.
 - Duplicate UX: when paper already exists, popup shows `Already imported` with an `Open imported note` action.
 - Options page can create the root-level `PaperClipper.base` from the bundled template.
-- Options page can rebuild the local duplicate index by scanning an explicitly selected paper folder.
+- Options page remembers an explicitly selected paper folder and can rebuild the local duplicate index without selecting it again.
 - Stable note path: `{targetFolder}/{arxiv_id}.md`.
 - URL normalization: `/abs/`, `/html/`, and versioned URLs share the same versionless `arxiv_id` and duplicate record.
 
@@ -109,7 +109,8 @@ If you change `SKILL.md` metadata, restart Codex. Script changes are picked up t
 3. Load this folder as an unpacked extension.
 4. Open the extension options and set the Obsidian vault name.
 5. Click `Create PaperClipper Base` in options if `/PaperClipper.base` does not exist.
-6. Click `Rebuild import index` and select the existing paper folder before importing into a populated Vault.
-7. Open an arXiv abstract or official HTML page and click Paper Clipper.
+6. Click `Choose folder` once and select the existing paper folder.
+7. Click `Rebuild import index`; later rebuilds reuse the saved folder until you click `Change folder`.
+8. Open an arXiv abstract or official HTML page and click Paper Clipper.
 
 For database-first usage and base schema, see [docs/PAPER_DATABASE_DESIGN_DRAFT.md](/Users/wind/Projects/paper-clipper/docs/PAPER_DATABASE_DESIGN_DRAFT.md). Base template: [templates/PaperClipper.base](/Users/wind/Projects/paper-clipper/templates/PaperClipper.base).

@@ -74,6 +74,7 @@ select {
 .actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 4px;
 }
@@ -103,6 +104,22 @@ button {
   border-top: 1px solid #dce1de;
 }
 
+.folder-binding {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.folder-binding span {
+  color: #5d6b70;
+}
+
+.folder-binding strong {
+  overflow-wrap: anywhere;
+}
+
 .secondary {
   background: #ffffff;
   border: 1px solid #a7b8b3;
@@ -128,7 +145,8 @@ button:disabled {
   }
 
   .eyebrow,
-  label span {
+  label span,
+  .folder-binding span {
     color: #a8b6b8;
   }
 

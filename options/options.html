@@ -46,8 +46,13 @@
 
       <section class="database">
         <h2>Duplicate protection</h2>
-        <p>Select the configured paper folder to rebuild the local import index from existing notes.</p>
+        <p>Bind the paper folder once, then rebuild the local import index without selecting it again.</p>
+        <div class="folder-binding">
+          <span>Paper folder</span>
+          <strong id="paperFolderStatus">Loading...</strong>
+        </div>
         <div class="actions">
+          <button id="chooseFolderButton" type="button" class="secondary">Choose folder</button>
           <button id="rebuildIndexButton" type="button" class="secondary">Rebuild import index</button>
           <span id="indexStatus" role="status"></span>
         </div>
@@ -63,6 +68,7 @@
     </main>
     <script src="../shared/paper-schema.js"></script>
     <script src="../shared/paper-index.js"></script>
+    <script src="../shared/paper-directory.js"></script>
     <script src="options.js"></script>
   </body>
 </html>
