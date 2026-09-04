@@ -113,4 +113,20 @@ If you change `SKILL.md` metadata, restart Codex. Script changes are picked up t
 7. Click `Rebuild import index`; later rebuilds reuse the saved folder until you click `Change folder`.
 8. Open an arXiv abstract or official HTML page and click Paper Clipper.
 
+## Privacy
+
+Paper Clipper processes paper metadata locally and does not operate a developer-controlled backend. See [PRIVACY.md](PRIVACY.md) for the complete data-handling policy.
+
+## Chrome Web Store Package
+
+Build the uploadable extension ZIP with:
+
+```bash
+scripts/package_chrome_extension.sh
+```
+
+The package is written to `dist/` and contains only extension runtime files. Store listing copy, permission justifications, and reviewer instructions are maintained in [docs/CHROME_WEB_STORE_LISTING.md](docs/CHROME_WEB_STORE_LISTING.md).
+
+Required screenshots and promotional images are in [store-assets/](store-assets/). The screenshots come from a clean test run of the unpacked release; regenerate the promo images with `scripts/render_chrome_web_store_assets.sh` after branding changes.
+
 For database-first usage and base schema, see [docs/PAPER_DATABASE_DESIGN_DRAFT.md](/Users/wind/Projects/paper-clipper/docs/PAPER_DATABASE_DESIGN_DRAFT.md). Base template: [templates/PaperClipper.base](/Users/wind/Projects/paper-clipper/templates/PaperClipper.base).
